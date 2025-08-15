@@ -16,11 +16,11 @@ const PORT = process.env.PORT || 3000;
 //   put,
 //   scanAerospikeKeys,
 // } = require("./services/aerospike");
-// const {
-//   connectMongo,
-//   findUser: findMongo,
-//   upsertUser: upsertMongo,
-// } = require("./services/mongo");
+const {
+  connectMongo,
+  findUser: findMongo,
+  upsertUser: upsertMongo,
+} = require("./services/mongo");
 // const {
 //   connectYuga,
 //   findUser: findYuga,
@@ -99,7 +99,7 @@ cron.schedule("*/10 * * * *", async () => {
 (async () => {
   try {
     // await connectAerospike();
-    // await connectMongo();
+    await connectMongo();
     // await connectYuga();
 
     app.listen(PORT, () => {
