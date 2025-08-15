@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const cron = require("node-cron");
 require("dotenv").config();
+const PORT = process.env.PORT || 3000;
 // const {
 //   rotateSets,
 //   scanSet,
@@ -101,7 +102,7 @@ cron.schedule("*/10 * * * *", async () => {
     // await connectMongo();
     // await connectYuga();
 
-    app.listen(5005, () => {
+    app.listen(PORT, () => {
       console.log("✅ Identity API running on http://localhost:5005");
     });
   } catch (err) {
