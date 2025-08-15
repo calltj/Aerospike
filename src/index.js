@@ -10,7 +10,7 @@ const {
 } = require("./services/aerospike");
 
 const {
-  connectAerospike,
+//   connectAerospike,
   get,
   put,
   scanAerospikeKeys,
@@ -97,7 +97,7 @@ cron.schedule("*/10 * * * *", async () => {
 
 (async () => {
   try {
-    await connectAerospike();
+    // await connectAerospike();
     await connectMongo();
     await connectYuga();
 
