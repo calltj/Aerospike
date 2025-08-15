@@ -103,7 +103,8 @@ cron.schedule("*/10 * * * *", async () => {
     // await connectYuga();
 
     app.listen(PORT, () => {
-      console.log("✅ Identity API running on http://localhost:5005");
+      console.log(`🚀 Identity API running on port ${PORT}`);
+
     });
   } catch (err) {
     console.error("❌ Startup error:", err.message);
