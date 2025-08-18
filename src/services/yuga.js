@@ -7,6 +7,7 @@ const yugaConn = new Client({
   user: process.env.YUGA_USER,
   password: process.env.YUGA_PASSWORD,
   database: process.env.YUGA_DB,
+  ssl: { rejectUnauthorized: false }
 });
 
 async function connectYuga() {
