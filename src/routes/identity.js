@@ -1,20 +1,20 @@
 const express = require("express");
 const router = express.Router();
-// const {
-//   get,
-//   put,
-//   getPrev,
-//   scanSet,
-//   prevSet,
-// } = require("../services/aerospike");
-// const {
-//   findUser: findMongo,
-//   upsertUser: upsertMongo,
-// } = require("../services/mongo");
-// const {
-//   findUser: findYuga,
-//   upsertUser: upsertYuga,
-// } = require("../services/yuga");
+const {
+  get,
+  put,
+  getPrev,
+  scanSet,
+  prevSet,
+} = require("../services/aerospike");
+const {
+  findUser: findMongo,
+  upsertUser: upsertMongo,
+} = require("../services/mongo");
+const {
+  findUser: findYuga,
+  upsertUser: upsertYuga,
+} = require("../services/yuga");
 
 router.post("/identity", async (req, res) => {
   const { user } = req.body;

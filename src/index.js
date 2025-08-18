@@ -3,35 +3,35 @@ const cors = require("cors");
 const cron = require("node-cron");
 require("dotenv").config();
 const PORT = process.env.PORT || 3000;
-// const {
-//   rotateSets,
-//   scanSet,
-//   getPrev,
-//   prevSet,
-// } = require("./services/aerospike");
+const {
+  rotateSets,
+  scanSet,
+  getPrev,
+  prevSet,
+} = require("./services/aerospike");
 
-// const {
-// //   connectAerospike,
-//   get,
-//   put,
-//   scanAerospikeKeys,
-// } = require("./services/aerospike");
+const {
+  connectAerospike,
+  get,
+  put,
+  scanAerospikeKeys,
+} = require("./services/aerospike");
 const {
   connectMongo,
   findUser: findMongo,
   upsertUser: upsertMongo,
 } = require("./services/mongo");
-// const {
-//   connectYuga,
-//   findUser: findYuga,
-//   upsertUser: upsertYuga,
-// } = require("./services/yuga");
-// const identityRoute = require("./routes/identity");
+const {
+  connectYuga,
+  findUser: findYuga,
+  upsertUser: upsertYuga,
+} = require("./services/yuga");
+const identityRoute = require("./routes/identity");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-// app.use("/api", identityRoute);
+app.use("/api", identityRoute);
 
 async function fullSync(batchSize = 100) {
   const keys = await scanAerospikeKeys("users");
@@ -98,9 +98,9 @@ cron.schedule("*/10 * * * *", async () => {
 
 (async () => {
   try {
-    // await connectAerospike();
+    await connectAerospike();
     await connectMongo();
-    // await connectYuga();
+    await connectYuga();
 
     app.listen(PORT, () => {
       console.log(`🚀 Identity API running on port ${PORT}`);
