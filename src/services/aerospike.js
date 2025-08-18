@@ -1,7 +1,8 @@
 const Aerospike = require('aerospike');
 const { DateTime } = require('luxon');
 require('dotenv').config();
-
+console.log('AEROSPIKE_HOST:', process.env.AEROSPIKE_HOST);
+console.log('AEROSPIKE_PORT:', process.env.AEROSPIKE_PORT);
 const config = {
   hosts: [
     {
