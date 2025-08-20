@@ -43,8 +43,8 @@ async function checkYugabyte() {
     password: process.env.YUGA_PASSWORD,
     database: process.env.YUGA_DB,
     ssl: {
-      rejectUnauthorized: true,
-      ca: require('fs').readFileSync('./certs/root.crt').toString(),
+      rejectUnauthorized: false,
+      // ca: require('fs').readFileSync('./certs/root.crt').toString(),
     },
   });
 
