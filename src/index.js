@@ -99,12 +99,14 @@ cron.schedule("*/10 * * * *", async () => {
 (async () => {
   try {
     await connectAerospike();
+    console.log("✅ Connected to Aerospike");
     await connectMongo();
+    console.log("✅ Connected to MongoDB");
     await connectYuga();
+    console.log("✅ Connected to YugabyteDB");
 
     app.listen(PORT, () => {
       console.log(`🚀 Identity API running on port ${PORT}`);
-
     });
   } catch (err) {
     console.error("❌ Startup error:", err.message);
