@@ -2,7 +2,7 @@ const axios = require('axios');
 const { Client } = require('pg');
 require('dotenv').config();
 
-const API_URL = 'http://localhost:5005/api';
+const API_URL = 'https://aerospike.brivas.io';
 const APP_NAME = 'yuga'; // Targeting YugabyteDB
 
 const testUser = {
