@@ -16,6 +16,8 @@ const {
   upsertUser: upsertYuga,
 } = require("../services/yuga");
 
+const { findVitess, upsertVitess } = require("../services/vitess");
+
 router.post("/identity", async (req, res) => {
   const { user } = req.body;
   const appName = req.headers["x-app-name"];
@@ -35,6 +37,9 @@ router.post("/identity", async (req, res) => {
           (await findMongo({ email: user.email }))
         : appName === "yuga"
         ? await findYuga(user.userId, user.email)
+        : appName === "vitess"
+        ? (await findVitess({ userId: user.userId })) ||
+          (await findVitess({ email: user.email }))
         : null;
 
     if (result) {
@@ -79,6 +84,8 @@ router.post("/sync", async (req, res) => {
           await upsertMongo(user);
         } else if (user.app === "yuga") {
           await upsertYuga(user);
+        } else if (user.app === "vitess") {
+          await upsertVitess(user);
         } else {
           continue;
         }
@@ -92,4 +99,30 @@ router.post("/sync", async (req, res) => {
     res.status(500).json({ error: "Sync failed", details: err.message });
   }
 });
+
+router.get("/identity/check", async (req, res) => {
+  const { email } = req.query;
+  const appName = req.headers["x-app-name"];
+  if (!email || !appName) {
+    return res.status(400).json({ error: "Missing email or app name" });
+  }
+
+  try {
+    let user = null;
+    if (appName === "rivas") {
+      user = await findMongo({ email });
+    } else if (appName === "yuga") {
+      user = await findYuga(null, email);
+    } else if (appName === "vitess") {
+      user = await findVitess({ email });
+    } else {
+      return res.status(400).json({ error: "Unsupported app name" });
+    }
+
+    res.json({ exists: !!user, user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

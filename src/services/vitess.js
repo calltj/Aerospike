@@ -1,5 +1,5 @@
-const mysql = require('mysql2/promise');
-require('dotenv').config();
+const mysql = require("mysql2/promise");
+require("dotenv").config();
 
 const vitessConn = mysql.createPool({
   host: process.env.VITESS_HOST,
@@ -9,13 +9,13 @@ const vitessConn = mysql.createPool({
   database: process.env.VITESS_DB,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 async function connectVitess() {
   // Test connection
   await vitessConn.getConnection();
-  console.log('✅ Connected to Vitess');
+  console.log("✅ Connected to Vitess");
 }
 
 async function upsertVitess(user) {
@@ -24,12 +24,30 @@ async function upsertVitess(user) {
     VALUES (?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email), age=VALUES(age), balance=VALUES(balance)
   `;
-  await vitessConn.query(sql, [user.userId, user.name, user.email, user.age, user.balance]);
+  await vitessConn.query(sql, [
+    user.userId,
+    user.name,
+    user.email,
+    user.age,
+    user.balance,
+  ]);
 }
 
 async function findVitess(query) {
-  const [rows] = await vitessConn.query('SELECT * FROM users WHERE userId = ?', [query.userId]);
-  return rows[0];
+  if (query.userId) {
+    const [rows] = await vitessConn.query(
+      "SELECT * FROM users WHERE userId = ?",
+      [query.userId]
+    );
+    return rows[0];
+  } else if (query.email) {
+    const [rows] = await vitessConn.query(
+      "SELECT * FROM users WHERE email = ?",
+      [query.email]
+    );
+    return rows[0];
+  }
+  return null;
 }
 
 module.exports = { connectVitess, upsertVitess, findVitess };
