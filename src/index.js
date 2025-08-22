@@ -10,12 +10,7 @@ const {
   prevSet,
 } = require("./services/aerospike");
 
-const {
-  connectAerospike,
-  get,
-  put,
- 
-} = require("./services/aerospike");
+const { connectAerospike, get, put } = require("./services/aerospike");
 const {
   connectMongo,
   findUser: findMongo,
@@ -27,6 +22,12 @@ const {
   upsertUser: upsertYuga,
 } = require("./services/yuga");
 const identityRoute = require("./routes/identity");
+
+const {
+  connectVitess,
+  findVitess,
+  upsertVitess,
+} = require("./services/vitess");
 
 const app = express();
 app.use(express.json());
@@ -50,6 +51,8 @@ async function fullSync(batchSize = 100) {
         await upsertMongo(user);
       } else if (user.app === "yuga") {
         await upsertYuga(user);
+      } else if (user.app === "vitess") {
+        await upsertVitess(user);
       } else {
         continue;
       }
@@ -83,6 +86,8 @@ cron.schedule("*/10 * * * *", async () => {
         ? await findMongo({ userId: cached.userId })
         : cached.app === "yuga"
         ? await findYuga(cached.userId, cached.email)
+        : cached.app === "vitess"
+        ? await findVitess({ userId: cached.userId })
         : null;
     if (!live || JSON.stringify(live) !== JSON.stringify(cached)) {
       console.log(`[🔄 RESYNC REQUIRED] ${cached.userId}`);
@@ -104,6 +109,8 @@ cron.schedule("*/10 * * * *", async () => {
     console.log("✅ Connected to MongoDB");
     await connectYuga();
     console.log("✅ Connected to YugabyteDB");
+    await connectVitess();
+    console.log("✅ Connected to Vitess");
 
     app.listen(PORT, () => {
       console.log(`🚀 Identity API running on port ${PORT}`);
