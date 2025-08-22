@@ -14,7 +14,7 @@ const {
   connectAerospike,
   get,
   put,
-  scanAerospikeKeys,
+ 
 } = require("./services/aerospike");
 const {
   connectMongo,
@@ -34,7 +34,7 @@ app.use(cors());
 app.use("/api", identityRoute);
 
 async function fullSync(batchSize = 100) {
-  const keys = await scanAerospikeKeys("users");
+  const keys = await scanSet("users");
   const userKeys = keys.filter((k) => k.key.startsWith("user:"));
   const log = [];
 
