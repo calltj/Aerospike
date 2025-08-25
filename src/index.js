@@ -35,7 +35,8 @@ app.use(cors());
 app.use("/api", identityRoute);
 
 async function fullSync(batchSize = 100) {
-  const keys = await scanSet("users");
+  const { activeSet } = require("./services/aerospike").getSetNames();
+  const keys = await scanSet(activeSet);
   const userKeys = keys.filter((k) => k.key.startsWith("user:"));
   const log = [];
 

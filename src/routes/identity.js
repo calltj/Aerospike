@@ -33,13 +33,11 @@ router.post("/identity", async (req, res) => {
 
     const result =
       appName === "rivas"
-        ? (await findMongo({ userId: user.userId })) ||
-          (await findMongo({ email: user.email }))
+        ? await findMongo({ email: user.email })
         : appName === "yuga"
-        ? await findYuga(user.userId, user.email)
+        ? await findYuga(null, user.email)
         : appName === "vitess"
-        ? (await findVitess({ userId: user.userId })) ||
-          (await findVitess({ email: user.email }))
+        ? await findVitess({ email: user.email })
         : null;
 
     if (result) {
