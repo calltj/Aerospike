@@ -120,16 +120,14 @@ router.get("/identity/check", async (req, res) => {
     const emailKey = `email:${appName}:${email}`;
     let user = await get(emailKey);
 
-    if (!user) {
-      if (appName === "rivas") {
-        user = await findMongo({ email });
-      } else if (appName === "yuga") {
-        user = await findYuga(null, email);
-      } else if (appName === "vitess") {
-        user = await findVitess({ email });
-      } else {
-        return res.status(400).json({ error: "Unsupported app name" });
-      }
+    if (appName === "rivas") {
+      user = await findMongo({ email });
+    } else if (appName === "yuga") {
+      user = await findYuga(null, email);
+    } else if (appName === "vitess" || appName === "ecommerce") {
+      user = await findVitess({ email });
+    } else {
+      return res.status(400).json({ error: "Unsupported app name" });
     }
 
     res.json({ exists: !!user, user });
