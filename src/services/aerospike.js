@@ -1,8 +1,8 @@
-const Aerospike = require('aerospike');
-const { DateTime } = require('luxon');
-require('dotenv').config();
-console.log('AEROSPIKE_HOST:', process.env.AEROSPIKE_HOST);
-console.log('AEROSPIKE_PORT:', process.env.AEROSPIKE_PORT);
+const Aerospike = require("aerospike");
+const { DateTime } = require("luxon");
+require("dotenv").config();
+console.log("AEROSPIKE_HOST:", process.env.AEROSPIKE_HOST);
+console.log("AEROSPIKE_PORT:", process.env.AEROSPIKE_PORT);
 const config = {
   hosts: [
     {
@@ -14,12 +14,12 @@ const config = {
 };
 
 const client = Aerospike.client(config);
-let activeSet = '';
-let prevSet = '';
+let activeSet = "";
+let prevSet = "";
 
 function getSetNames() {
-  const now = DateTime.now().setZone('Africa/Lagos');
-  const today = now.startOf('day');
+  const now = DateTime.now().setZone("Africa/Lagos");
+  const today = now.startOf("day");
   const rotationHour = 22;
   const rotationMinute = 30;
 
@@ -45,30 +45,38 @@ function getSetNames() {
 async function connectAerospike() {
   await client.connect();
   getSetNames();
-  console.log('✅ Connected to Aerospike');
+  console.log("✅ Connected to Aerospike");
 }
 
 function get(key) {
-  return client.get(new Aerospike.Key('test', activeSet, key)).then(res => res.bins).catch(() => null);
+  return client
+    .get(new Aerospike.Key("test", activeSet, key))
+    .then((res) => res.bins)
+    .catch(() => null);
 }
 
 function put(key, data, policy = {}) {
-  return client.put(new Aerospike.Key('test', activeSet, key), data, { policy });
+  const { activeSet } = getSetNames();
+  const options = Object.keys(policy).length ? { policy } : {};
+  return client.put(new Aerospike.Key("test", activeSet, key), data, options);
 }
 
 function getPrev(key) {
-  return client.get(new Aerospike.Key('test', prevSet, key)).then(res => res.bins).catch(() => null);
+  return client
+    .get(new Aerospike.Key("test", prevSet, key))
+    .then((res) => res.bins)
+    .catch(() => null);
 }
 
 function scanSet(setName) {
   return new Promise((resolve, reject) => {
-    const scan = client.scan('test', setName);
+    const scan = client.scan("test", setName);
     const keys = [];
     scan.foreach(
-      record => {
+      (record) => {
         keys.push({ key: record.key.key });
       },
-      err => {
+      (err) => {
         if (err) reject(err);
         else resolve(keys);
       }
@@ -77,13 +85,16 @@ function scanSet(setName) {
 }
 
 async function rotateSets() {
-  const twoDaysAgo = DateTime.now().setZone('Africa/Lagos').minus({ days: 2 }).toISODate();
+  const twoDaysAgo = DateTime.now()
+    .setZone("Africa/Lagos")
+    .minus({ days: 2 })
+    .toISODate();
   const oldSet = `users_${twoDaysAgo}`;
   console.log(`[🧹] Rotating sets. Deleting old set: ${oldSet}`);
 
   const keys = await scanSet(oldSet);
   for (const { key } of keys) {
-    await client.remove(new Aerospike.Key('test', oldSet, key)).catch(() => {});
+    await client.remove(new Aerospike.Key("test", oldSet, key)).catch(() => {});
   }
 
   getSetNames(); // Refresh active and prev sets
