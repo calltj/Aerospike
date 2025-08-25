@@ -1,4 +1,4 @@
-const Aerospike = require('aerospike');
+const Aerospike = require("aerospike");
 const express = require("express");
 const router = express.Router();
 const {
@@ -47,7 +47,7 @@ router.post("/identity", async (req, res) => {
       return res.json({ user: result });
     }
 
-        const newUser = {
+    const newUser = {
       ...user,
       balance: user.balance || 0,
       lastSyncedAt: null,
@@ -117,15 +117,19 @@ router.get("/identity/check", async (req, res) => {
   }
 
   try {
-    let user = null;
-    if (appName === "rivas") {
-      user = await findMongo({ email });
-    } else if (appName === "yuga") {
-      user = await findYuga(null, email);
-    } else if (appName === "vitess") {
-      user = await findVitess({ email });
-    } else {
-      return res.status(400).json({ error: "Unsupported app name" });
+    const emailKey = `email:${appName}:${email}`;
+    let user = await get(emailKey);
+
+    if (!user) {
+      if (appName === "rivas") {
+        user = await findMongo({ email });
+      } else if (appName === "yuga") {
+        user = await findYuga(null, email);
+      } else if (appName === "vitess") {
+        user = await findVitess({ email });
+      } else {
+        return res.status(400).json({ error: "Unsupported app name" });
+      }
     }
 
     res.json({ exists: !!user, user });
