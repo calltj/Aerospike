@@ -1,3 +1,4 @@
+const Aerospike = require('aerospike');
 const express = require("express");
 const router = express.Router();
 const {
@@ -24,8 +25,8 @@ router.post("/identity", async (req, res) => {
   if (!user || !appName)
     return res.status(400).json({ error: "Missing user or app name" });
 
-  const emailKey = `email:${user.email}`;
-  const idKey = `user:${user.userId}`;
+  const emailKey = `email:${appName}:${user.email}`;
+  const idKey = `user:${appName}:${user.userId}`;
 
   try {
     const cached = (await get(idKey)) || (await get(emailKey));
@@ -46,17 +47,27 @@ router.post("/identity", async (req, res) => {
       return res.json({ user: result });
     }
 
-    const newUser = {
+        const newUser = {
       ...user,
       balance: user.balance || 0,
       lastSyncedAt: null,
       app: appName,
     };
 
-    await put(idKey, newUser);
-    await put(emailKey, newUser);
-
-    return res.status(201).json({ user: newUser });
+    try {
+      // Try to create the emailKey only if it does not exist (atomic)
+      await put(emailKey, newUser, { exists: Aerospike.policy.exists.CREATE });
+      // idKey can be upserted
+      await put(idKey, newUser);
+      return res.status(201).json({ user: newUser });
+    } catch (err) {
+      if (err.code === Aerospike.status.ERR_RECORD_EXISTS) {
+        // Someone else just created this emailKey
+        const existing = await get(emailKey);
+        return res.json({ user: existing });
+      }
+      return res.status(500).json({ error: err.message });
+    }
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

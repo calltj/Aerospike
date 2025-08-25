@@ -52,8 +52,8 @@ function get(key) {
   return client.get(new Aerospike.Key('test', activeSet, key)).then(res => res.bins).catch(() => null);
 }
 
-function put(key, data) {
-  return client.put(new Aerospike.Key('test', activeSet, key), data);
+function put(key, data, policy = {}) {
+  return client.put(new Aerospike.Key('test', activeSet, key), data, { policy });
 }
 
 function getPrev(key) {
