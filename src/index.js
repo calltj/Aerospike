@@ -59,7 +59,7 @@ async function fullSync(batchSize = 100) {
       }
 
       await put(key, user);
-      await put(`email:${user.email}`, user);
+      await put(`email:${user.app}:${user.email}`, user);
       log.push(`[SYNCED] ${user.userId}`);
     }
   }
