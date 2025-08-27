@@ -29,6 +29,12 @@ const {
   upsertVitess,
 } = require("./services/vitess");
 
+const {
+  connectScylla,
+  findScylla,
+  upsertScylla,
+} = require("./services/scylla");
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -112,6 +118,8 @@ cron.schedule("*/10 * * * *", async () => {
     console.log("✅ Connected to YugabyteDB");
     await connectVitess();
     console.log("✅ Connected to Vitess");
+    await connectScylla();
+    console.log("✅ Connected to ScyllaDB");
 
     app.listen(PORT, () => {
       console.log(`🚀 Identity API running on port ${PORT}`);

@@ -56,7 +56,7 @@ function get(key) {
 }
 
 function put(key, data, policy = {}) {
- const options = Object.keys(policy).length ? { policy } : {};
+ const options = Object.keys(policy).length ? { policy } : {};b
   return client.put(new Aerospike.Key("test", activeSet, key), data, options);
 }
 

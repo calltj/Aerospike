@@ -18,9 +18,26 @@ async function connectVitess() {
   console.log("✅ Connected to Vitess");
 }
 
-async function upsertVitess(user) {
+async function findVitess(query, table = "users") {
+  if (query.userId) {
+    const [rows] = await vitessConn.query(
+      `SELECT * FROM \`${table}\` WHERE userId = ?`,
+      [query.userId]
+    );
+    return rows[0];
+  } else if (query.email) {
+    const [rows] = await vitessConn.query(
+      `SELECT * FROM \`${table}\` WHERE email = ?`,
+      [query.email]
+    );
+    return rows[0];
+  }
+  return null;
+}
+
+async function upsertVitess(user, table = "users") {
   const sql = `
-    INSERT INTO users (userId, name, email, age, balance)
+    INSERT INTO \`${table}\` (userId, name, email, age, balance)
     VALUES (?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email), age=VALUES(age), balance=VALUES(balance)
   `;
@@ -31,23 +48,6 @@ async function upsertVitess(user) {
     user.age,
     user.balance,
   ]);
-}
-
-async function findVitess(query) {
-  if (query.userId) {
-    const [rows] = await vitessConn.query(
-      "SELECT * FROM users WHERE userId = ?",
-      [query.userId]
-    );
-    return rows[0];
-  } else if (query.email) {
-    const [rows] = await vitessConn.query(
-      "SELECT * FROM users WHERE email = ?",
-      [query.email]
-    );
-    return rows[0];
-  }
-  return null;
 }
 
 module.exports = { connectVitess, upsertVitess, findVitess };

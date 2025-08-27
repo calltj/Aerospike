@@ -19,8 +19,10 @@ const {
 
 const { findVitess, upsertVitess } = require("../services/vitess");
 
+const { findScylla, upsertScylla } = require("../services/scylla");
+
 router.post("/identity", async (req, res) => {
-  const { user } = req.body;
+  const { user, table = "users" } = req.body;
   const appName = req.headers["x-app-name"];
   if (!user || !appName)
     return res.status(400).json({ error: "Missing user or app name" });
@@ -34,11 +36,13 @@ router.post("/identity", async (req, res) => {
 
     const result =
       appName === "rivas"
-        ? await findMongo({ email: user.email })
+        ? await findMongo({ email: user.email }, table)
         : appName === "yuga"
-        ? await findYuga(null, user.email)
+        ? await findYuga(null, user.email, table)
         : appName === "vitess"
-        ? await findVitess({ email: user.email })
+        ? await findVitess({ email: user.email }, table)
+        : appName === "scylla"
+        ? await findScylla({ email: user.email }, table)
         : null;
 
     if (result) {
@@ -90,11 +94,13 @@ router.post("/sync", async (req, res) => {
         user.lastSyncedAt = new Date().toISOString();
 
         if (user.app === "rivas") {
-          await upsertMongo(user);
+          await upsertMongo(user, user.table || "users");
         } else if (user.app === "yuga") {
-          await upsertYuga(user);
+          await upsertYuga(user, user.table || "users");
         } else if (user.app === "vitess") {
-          await upsertVitess(user);
+          await upsertVitess(user, user.table || "users");
+        } else if (user.app === "scylla") {
+          await upsertScylla(user, user.table || "users");
         } else {
           continue;
         }
@@ -110,7 +116,7 @@ router.post("/sync", async (req, res) => {
 });
 
 router.get("/identity/check", async (req, res) => {
-  const { email } = req.query;
+  const { email, table = "users" } = req.query;
   const appName = req.headers["x-app-name"];
   if (!email || !appName) {
     return res.status(400).json({ error: "Missing email or app name" });
@@ -122,11 +128,13 @@ router.get("/identity/check", async (req, res) => {
 
     if (!user) {
       if (appName === "rivas") {
-        user = await findMongo({ email });
+        user = await findMongo({ email }, table);
       } else if (appName === "yuga") {
-        user = await findYuga(null, email);
+        user = await findYuga(null, email, table);
       } else if (appName === "vitess" || appName === "ecommerce") {
-        user = await findVitess({ email });
+        user = await findVitess({ email }, table);
+      } else if (appName === "scylla") {
+        user = await findScylla({ email }, table);
       } else {
         return res.status(400).json({ error: "Unsupported app name" });
       }

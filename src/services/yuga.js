@@ -1,5 +1,5 @@
-const { Client } = require('pg');
-require('dotenv').config();
+const { Client } = require("pg");
+require("dotenv").config();
 
 const yugaConn = new Client({
   host: process.env.YUGA_HOST,
@@ -7,25 +7,25 @@ const yugaConn = new Client({
   user: process.env.YUGA_USER,
   password: process.env.YUGA_PASSWORD,
   database: process.env.YUGA_DB,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 async function connectYuga() {
   await yugaConn.connect();
-  console.log('✅ Connected to YugabyteDB');
+  console.log("✅ Connected to YugabyteDB");
 }
 
-async function findUser(userId, email) {
+async function findUser(userId, email, table = "users") {
   const res = await yugaConn.query(
-    'SELECT * FROM users WHERE userId = $1 OR email = $2',
-    [userId || '', email || '']
+    `SELECT * FROM "${table}" WHERE userId = $1 OR email = $2`,
+    [userId || "", email || ""]
   );
   return res.rows[0] || null;
 }
 
-async function upsertUser(user) {
+async function upsertUser(user, table = "users") {
   await yugaConn.query(
-    `INSERT INTO users (userId,name,email,age,balance,lastSyncedAt)
+    `INSERT INTO "${table}" (userId,name,email,age,balance,lastSyncedAt)
      VALUES ($1,$2,$3,$4,$5,$6)
      ON CONFLICT (userId) DO UPDATE
      SET name=$2, age=$4, balance=$5, lastSyncedAt=$6`,
@@ -39,5 +39,4 @@ async function upsertUser(user) {
     ]
   );
 }
-
 module.exports = { connectYuga, findUser, upsertUser };

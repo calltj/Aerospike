@@ -1,22 +1,25 @@
-const { MongoClient } = require('mongodb');
-require('dotenv').config();
+const { MongoClient } = require("mongodb");
+require("dotenv").config();
 
 let mongoCollection;
 
 async function connectMongo() {
   const client = new MongoClient(process.env.MONGO_URI);
   await client.connect();
-  mongoCollection = client.db().collection('users');
-  console.log('✅ Connected to MongoDB');
+  mongoCollection = client.db().collection("users");
+  console.log("✅ Connected to MongoDB");
 }
 
-function findUser(filter) {
-  return mongoCollection.findOne(filter);
+async function findUser(filter, collectionName = "users") {
+  return mongoCollection.db().collection(collectionName).findOne(filter);
 }
 
-function upsertUser(user) {
+async function upsertUser(user, collectionName = "users") {
   const { userId, ...rest } = user;
-  return mongoCollection.updateOne({ userId }, { $set: rest }, { upsert: true });
+  return mongoCollection
+    .db()
+    .collection(collectionName)
+    .updateOne({ userId }, { $set: rest }, { upsert: true });
 }
 
 module.exports = { connectMongo, findUser, upsertUser };
