@@ -13,8 +13,8 @@ async function connectScylla() {
       username: process.env.SCYLLA_USERNAME,
       password: process.env.SCYLLA_PASSWORD,
     },
-    sslOptions: {rejectUnauthorized: false},
-    keyspace: process.env.SCYLLA_KEYSPACE || "my_keyspace",
+    // sslOptions: {rejectUnauthorized: false},
+    // keyspace: process.env.SCYLLA_KEYSPACE || "my_keyspace",
   });
   await scyllaConn.connect();
   console.log("✅ Connected to ScyllaDB");
