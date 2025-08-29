@@ -2,6 +2,34 @@ const cassandra = require("cassandra-driver");
 let scyllaConn;
 
 async function connectScylla() {
+  const tempClient = new cassandra.Client({
+    contactPoints: [
+      process.env.SCYLLA_NODE0,
+      process.env.SCYLLA_NODE1,
+      process.env.SCYLLA_NODE2,
+    ].filter(Boolean),
+    localDataCenter: process.env.SCYLLA_LOCAL_DC || "AWS_US_EAST_1",
+    credentials: {
+      username: process.env.SCYLLA_USERNAME,
+      password: process.env.SCYLLA_PASSWORD,
+    },
+  });
+  try {
+    await tempClient.connect();
+    console.log("✅ Connected to ScyllaDB cluster successfully!");
+
+    await tempClient.execute(`
+      CREATE KEYSPACE IF NOT EXISTS my_keyspace
+      WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3'}
+    `);
+    console.log("📦 Keyspace 'my_keyspace' created or already exists.");
+  } catch (err) {
+    console.error("❌ ScyllaDB connection error:", err);
+    throw err;
+  } finally {
+    await tempClient.shutdown();
+  }
+
   scyllaConn = new cassandra.Client({
     contactPoints: [
       process.env.SCYLLA_NODE0,
@@ -13,11 +41,11 @@ async function connectScylla() {
       username: process.env.SCYLLA_USERNAME,
       password: process.env.SCYLLA_PASSWORD,
     },
-    // sslOptions: {rejectUnauthorized: false},
     keyspace: process.env.SCYLLA_KEYSPACE || "my_keyspace",
   });
+
   await scyllaConn.connect();
-  console.log("✅ Connected to ScyllaDB");
+  console.log("✅ Connected to ScyllaDB (with keyspace)!");
 }
 
 async function findScylla(query, table = "users") {
