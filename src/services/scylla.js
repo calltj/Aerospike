@@ -33,6 +33,10 @@ async function connectScylla() {
     lastSyncedAt timestamp
   )
 `);
+    await tempClient.execute(`
+  CREATE INDEX IF NOT EXISTS users_email_idx ON my_keyspace.users (email)
+`);
+    console.log("📦 Index on 'email' created or already exists.");
     console.log("📦 Table 'users' created or already exists.");
   } catch (err) {
     console.error("❌ ScyllaDB connection error:", err);
