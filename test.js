@@ -1,25 +1,23 @@
-const axios = require('axios');
+const axios = require("axios");
 
-const API_URL = 'https://aerospike.brivas.io/api/identity';
-const testUser = {
-  userId: 'vitess123',
-  name: 'Vitess User',
-  email: 'vitess.user@example.com',
-  age: 32,
-  balance: 1500,
+const API_URL = "https://aerospike.brivas.io/api/identity"; // <-- login endpoint
+const loginData = {
+  email: "mongo.user@example.com",
+  // password: 'yourPassword' // Uncomment if your API requires a password
 };
 
-async function signup() {
+async function login() {
   try {
-    const res = await axios.post(
-      API_URL,
-      { user: testUser },
-      { headers: { 'x-app-name': 'vitess' } } // <-- Use 'vitess' here
-    );
-    console.log('[✅ SIGNUP] Response:', res.data);
+    const res = await axios.post(API_URL, loginData, {
+      headers: { "x-app-name": "mongodb" },
+    });
+    logger.info("[✅ MONGODB LOGIN] Response:", res.data);
   } catch (err) {
-    console.error('[❌ SIGNUP] Error:', err.response?.data || err.message);
+    logger.error(
+      "[❌ MONGODB LOGIN] Error:",
+      err.response?.data || err.message
+    );
   }
 }
 
-signup();
+login();

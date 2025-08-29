@@ -1,4 +1,5 @@
 const { Client } = require("pg");
+const logger = require("./logger");
 require("dotenv").config();
 
 const yugaConn = new Client({
@@ -12,7 +13,7 @@ const yugaConn = new Client({
 
 async function connectYuga() {
   await yugaConn.connect();
-  console.log("✅ Connected to YugabyteDB");
+  logger.info("✅ Connected to YugabyteDB");
 }
 
 async function findUser(userId, email, table = "users") {
@@ -39,4 +40,18 @@ async function upsertUser(user, table = "users") {
     ]
   );
 }
-module.exports = { connectYuga, findUser, upsertUser };
+
+async function deleteUser(userId, table = "users") {
+  await yugaConn.query(`DELETE FROM "${table}" WHERE userId = $1`, [userId]);
+  return { userId };
+}
+
+async function listUsers(table = "users", skip = 0, limit = 20) {
+  const res = await yugaConn.query(
+    `SELECT * FROM "${table}" OFFSET $1 LIMIT $2`,
+    [skip, limit]
+  );
+  return res.rows;
+}
+
+module.exports = { connectYuga, findUser, upsertUser, deleteUser, listUsers };

@@ -1,8 +1,9 @@
 const Aerospike = require("aerospike");
 const { DateTime } = require("luxon");
 require("dotenv").config();
-console.log("AEROSPIKE_HOST:", process.env.AEROSPIKE_HOST);
-console.log("AEROSPIKE_PORT:", process.env.AEROSPIKE_PORT);
+const logger = require("./logger");
+logger.info("AEROSPIKE_HOST:", process.env.AEROSPIKE_HOST);
+logger.info("AEROSPIKE_PORT:", process.env.AEROSPIKE_PORT);
 const config = {
   hosts: [
     {
@@ -39,13 +40,13 @@ function getSetNames() {
   activeSet = `users_${activeDate.toISODate()}`;
   prevSet = `users_${prevDate.toISODate()}`;
 
-  console.log(`[🧭] Active Set: ${activeSet}, Prev Set: ${prevSet}`);
+  logger.info(`[🧭] Active Set: ${activeSet}, Prev Set: ${prevSet}`);
 }
 
 async function connectAerospike() {
   await client.connect();
   getSetNames();
-  console.log("✅ Connected to Aerospike");
+  logger.info("✅ Connected to Aerospike");
 }
 
 function get(key) {
@@ -56,7 +57,7 @@ function get(key) {
 }
 
 function put(key, data, policy = {}) {
- const options = Object.keys(policy).length ? { policy } : {};
+  const options = Object.keys(policy).length ? { policy } : {};
   return client.put(new Aerospike.Key("test", activeSet, key), data, options);
 }
 
@@ -89,7 +90,7 @@ async function rotateSets() {
     .minus({ days: 2 })
     .toISODate();
   const oldSet = `users_${twoDaysAgo}`;
-  console.log(`[🧹] Rotating sets. Deleting old set: ${oldSet}`);
+  logger.info(`[🧹] Rotating sets. Deleting old set: ${oldSet}`);
 
   const keys = await scanSet(oldSet);
   for (const { key } of keys) {

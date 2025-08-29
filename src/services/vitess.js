@@ -1,4 +1,5 @@
 const mysql = require("mysql2/promise");
+const logger = require("./logger");
 require("dotenv").config();
 
 const vitessConn = mysql.createPool({
@@ -15,7 +16,7 @@ const vitessConn = mysql.createPool({
 async function connectVitess() {
   // Test connection
   await vitessConn.getConnection();
-  console.log("✅ Connected to Vitess");
+  logger.info("✅ Connected to Vitess");
 }
 
 async function findVitess(query, table = "users") {
@@ -50,4 +51,21 @@ async function upsertVitess(user, table = "users") {
   ]);
 }
 
-module.exports = { connectVitess, upsertVitess, findVitess };
+async function deleteUser(userId, table = "users") {
+  await vitessConn.query(
+    `DELETE FROM \`${table}\` WHERE userId = ?`,
+    [userId]
+  );
+  return { userId };
+}
+
+async function listUsers(table = "users", skip = 0, limit = 20) {
+  const [rows] = await vitessConn.query(
+    `SELECT * FROM \`${table}\` LIMIT ? OFFSET ?`,
+    [limit, skip]
+  );
+  return rows;
+}
+
+
+module.exports = { connectVitess, upsertVitess, findVitess, deleteUser, listUsers};

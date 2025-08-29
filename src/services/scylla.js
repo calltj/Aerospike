@@ -1,4 +1,5 @@
 const cassandra = require("cassandra-driver");
+const logger = require("./logger");
 let scyllaConn;
 
 async function connectScylla() {
@@ -16,13 +17,13 @@ async function connectScylla() {
   });
   try {
     await tempClient.connect();
-    console.log("✅ Connected to ScyllaDB cluster successfully!");
+    logger.info("✅ Connected to ScyllaDB cluster successfully!");
 
     await tempClient.execute(`
       CREATE KEYSPACE IF NOT EXISTS my_keyspace
       WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3'}
     `);
-    console.log("📦 Keyspace 'my_keyspace' created or already exists.");
+    logger.info("📦 Keyspace 'my_keyspace' created or already exists.");
     await tempClient.execute(`
   CREATE TABLE IF NOT EXISTS my_keyspace.users (
     userId text PRIMARY KEY,
@@ -36,10 +37,10 @@ async function connectScylla() {
     await tempClient.execute(`
   CREATE INDEX IF NOT EXISTS users_email_idx ON my_keyspace.users (email)
 `);
-    console.log("📦 Index on 'email' created or already exists.");
-    console.log("📦 Table 'users' created or already exists.");
+    logger.info("📦 Index on 'email' created or already exists.");
+    logger.info("📦 Table 'users' created or already exists.");
   } catch (err) {
-    console.error("❌ ScyllaDB connection error:", err);
+    logger.error("❌ ScyllaDB connection error:", err);
     throw err;
   } finally {
     await tempClient.shutdown();
@@ -60,7 +61,7 @@ async function connectScylla() {
   });
 
   await scyllaConn.connect();
-  console.log("✅ Connected to ScyllaDB (with keyspace)!");
+  logger.info("✅ Connected to ScyllaDB (with keyspace)!");
 }
 
 async function findScylla(query, table = "users") {
@@ -99,4 +100,22 @@ async function upsertScylla(user, table = "users") {
   );
 }
 
-module.exports = { connectScylla, findScylla, upsertScylla };
+async function deleteUser(userId, table = "users") {
+  await scyllaConn.execute(
+    `DELETE FROM ${table} WHERE userId = ?`,
+    [userId],
+    { prepare: true }
+  );
+  return { userId };
+}
+
+async function listUsers(table = "users", skip = 0, limit = 20) {
+  const res = await scyllaConn.execute(
+    `SELECT * FROM ${table} LIMIT ? OFFSET ? ALLOW FILTERING`,
+    [limit, skip],
+    { prepare: true }
+  );
+  return res.rows;
+}
+
+module.exports = { connectScylla, findScylla, upsertScylla,deleteUser, listUsers, };

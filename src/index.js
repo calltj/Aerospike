@@ -1,4 +1,6 @@
+require("../config/validateEnv");
 const express = require("express");
+const logger = require("./logger");
 const cors = require("cors");
 const cron = require("node-cron");
 require("dotenv").config();
@@ -36,6 +38,12 @@ const {
 } = require("./services/scylla");
 
 const app = express();
+const rateLimit = require("express-rate-limit");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
+const swaggerDocument = YAML.load("./swagger.yaml");
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 app.use(express.json());
 app.use(cors());
 app.use("/api", identityRoute);
@@ -73,17 +81,17 @@ async function fullSync(batchSize = 100) {
   return log;
 }
 cron.schedule("30 22 * * *", async () => {
-  console.log("[🧭] Rotating Aerospike sets at 10:30PM...");
+  logger.info("[🧭] Rotating Aerospike sets at 10:30PM...");
   await rotateSets();
 });
 
 cron.schedule("0 23 * * *", async () => {
-  console.log("[🕛] Nightly sync started...");
+  logger.info("[🕛] Nightly sync started...");
   await fullSync();
 });
 
 cron.schedule("*/10 * * * *", async () => {
-  console.log("[🧠] Checking for outdated data in prevSet...");
+  logger.info("[🧠] Checking for outdated data in prevSet...");
   const keys = await scanSet(prevSet());
   for (const { key } of keys) {
     if (!key.startsWith("user:")) continue;
@@ -97,7 +105,7 @@ cron.schedule("*/10 * * * *", async () => {
         ? await findVitess({ userId: cached.userId })
         : null;
     if (!live || JSON.stringify(live) !== JSON.stringify(cached)) {
-      console.log(`[🔄 RESYNC REQUIRED] ${cached.userId}`);
+      logger.info(`[🔄 RESYNC REQUIRED] ${cached.userId}`);
       cached.lastSyncedAt = new Date().toISOString();
       if (cached.app === "rivas") {
         await upsertMongo(cached);
@@ -111,21 +119,30 @@ cron.schedule("*/10 * * * *", async () => {
 (async () => {
   try {
     await connectAerospike();
-    console.log("✅ Connected to Aerospike");
+    logger.info("✅ Connected to Aerospike");
     await connectMongo();
-    console.log("✅ Connected to MongoDB");
+    logger.info("✅ Connected to MongoDB");
     await connectYuga();
-    console.log("✅ Connected to YugabyteDB");
+    logger.info("✅ Connected to YugabyteDB");
     await connectVitess();
-    console.log("✅ Connected to Vitess");
+    logger.info("✅ Connected to Vitess");
     await connectScylla();
-    console.log("✅ Connected to ScyllaDB");
+    logger.info("✅ Connected to ScyllaDB");
 
+    app.get("/health", (req, res) => res.json({ status: "ok" }));
+    app.get("/ready", async (req, res) => {
+      // Optionally check DB connections
+      res.json({ ready: true });
+    });
+    app.use((err, req, res, next) => {
+      logger.error(err);
+      res.status(500).json({ error: err.message });
+    });
     app.listen(PORT, () => {
-      console.log(`🚀 Identity API running on port ${PORT}`);
+      logger.info(`🚀 Identity API running on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ Startup error:", err.message);
+    logger.error("❌ Startup error:", err.message);
     process.exit(1);
   }
 })();

@@ -1,0 +1,12 @@
+openapi: 3.0.0
+info:
+  title: Identity API
+  version: 1.0.0
+paths:
+  /api/identity:
+    post:
+      summary: Create or fetch a user
+      responses:
+        '200':
+          description: OK
+  
