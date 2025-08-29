@@ -8,12 +8,12 @@ async function connectScylla() {
       process.env.SCYLLA_NODE1,
       process.env.SCYLLA_NODE2,
     ].filter(Boolean),
-    localDataCenter: process.env.SCYLLA_LOCAL_DC || "datacenter1",
+    localDataCenter: process.env.SCYLLA_LOCAL_DC || "AWS_US_EAST_1",
     credentials: {
       username: process.env.SCYLLA_USERNAME,
       password: process.env.SCYLLA_PASSWORD,
     },
-    sslOptions: {},
+    sslOptions: {rejectUnauthorized: false},
     keyspace: process.env.SCYLLA_KEYSPACE || "my_keyspace",
   });
   await scyllaConn.connect();
