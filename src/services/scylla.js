@@ -14,7 +14,7 @@ async function connectScylla() {
       password: process.env.SCYLLA_PASSWORD,
     },
     // sslOptions: {rejectUnauthorized: false},
-    // keyspace: process.env.SCYLLA_KEYSPACE || "my_keyspace",
+    keyspace: process.env.SCYLLA_KEYSPACE || "my_keyspace",
   });
   await scyllaConn.connect();
   console.log("✅ Connected to ScyllaDB");
