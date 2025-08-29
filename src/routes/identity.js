@@ -27,7 +27,7 @@ const { findVitess, upsertVitess } = require("../services/vitess");
 
 const { findScylla, upsertScylla } = require("../services/scylla");
 
-router.post("/identity", authMiddleware, async (req, res) => {
+router.post("/identity", async (req, res) => {
   logger.info("Received POST /identity", req.body, req.headers["x-app-name"]);
   const { user, table = "users" } = req.body;
   const appName = req.headers["x-app-name"];
