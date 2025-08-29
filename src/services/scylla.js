@@ -23,6 +23,17 @@ async function connectScylla() {
       WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3'}
     `);
     console.log("📦 Keyspace 'my_keyspace' created or already exists.");
+    await tempClient.execute(`
+  CREATE TABLE IF NOT EXISTS my_keyspace.users (
+    userId text PRIMARY KEY,
+    name text,
+    email text,
+    age int,
+    balance double,
+    lastSyncedAt timestamp
+  )
+`);
+    console.log("📦 Table 'users' created or already exists.");
   } catch (err) {
     console.error("❌ ScyllaDB connection error:", err);
     throw err;
