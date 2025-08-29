@@ -22,6 +22,7 @@ const { findVitess, upsertVitess } = require("../services/vitess");
 const { findScylla, upsertScylla } = require("../services/scylla");
 
 router.post("/identity", async (req, res) => {
+  console.log("Received POST /identity", req.body, req.headers["x-app-name"]);
   const { user, table = "users" } = req.body;
   const appName = req.headers["x-app-name"];
   if (!user || !appName)
