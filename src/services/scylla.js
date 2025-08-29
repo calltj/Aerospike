@@ -1,5 +1,5 @@
 const cassandra = require("cassandra-driver");
-const logger = require("./logger");
+const logger = require("../logger");
 let scyllaConn;
 
 async function connectScylla() {

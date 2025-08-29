@@ -1,6 +1,6 @@
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
-const logger = require("./logger");
+const logger = require("../logger");
 let mongoCollection;
 
 async function connectMongo() {

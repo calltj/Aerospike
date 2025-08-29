@@ -1,5 +1,5 @@
 const { Client } = require("pg");
-const logger = require("./logger");
+const logger = require("../logger");
 require("dotenv").config();
 
 const yugaConn = new Client({
