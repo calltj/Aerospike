@@ -1,9 +1,9 @@
-require("../config/validateEnv");
 const express = require("express");
 const logger = require("./logger");
 const cors = require("cors");
 const cron = require("node-cron");
 require("dotenv").config();
+require("../config/validateEnv");
 const PORT = process.env.PORT || 3000;
 const {
   rotateSets,
