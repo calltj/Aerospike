@@ -38,6 +38,7 @@ const {
 } = require("./services/scylla");
 
 const app = express();
+app.set("trust proxy", 1);
 const rateLimit = require("express-rate-limit");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
@@ -94,10 +95,18 @@ cron.schedule("11 11 * * *", async () => {
 cron.schedule("12 11 * * *", async () => {
   const start = Date.now();
   logger.info(`Nightly sync started at ${new Date(start).toISOString()}`);
-  await fullSync();
-  const end = Date.now();
-  const elapsed = end - start;
-  logger.info(`Nightly sync finished at ${new Date(end).toISOString()} [${elapsed}ms elapsed]`);
+  try {
+    await fullSync();
+    const end = Date.now();
+    const elapsed = end - start;
+    logger.info(
+      `Nightly sync finished at ${new Date(
+        end
+      ).toISOString()} [${elapsed}ms elapsed]`
+    );
+  } catch (err) {
+    logger.error(`[NIGHTLY SYNC ERROR] ${err.message}`);
+  }
 });
 
 cron.schedule("*/10 * * * *", async () => {
