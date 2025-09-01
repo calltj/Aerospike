@@ -49,43 +49,49 @@ app.use(cors());
 app.use("/api", identityRoute);
 
 async function fullSync(batchSize = 100) {
-  const { activeSet } = require("./services/aerospike").getSetNames();
-  const keys = await scanSet(activeSet);
+  const { activeSet } = require("./services/aerospike");
+  const setName = activeSet();
+  const keys = await scanSet(setName);
   const userKeys = keys.filter((k) => k.key.startsWith("user:"));
   const log = [];
 
   for (let i = 0; i < userKeys.length; i += batchSize) {
     const batch = userKeys.slice(i, i + batchSize);
-    for (const { key } of batch) {
-      const user = await get(key);
-      if (!user || user.lastSyncedAt) continue;
+    // filepath: src/index.js (inside fullSync)
+for (const { key } of batch) {
+  try {
+    const user = await get(key);
+    if (!user || user.lastSyncedAt) continue;
 
-      user.lastSyncedAt = new Date().toISOString();
+    user.lastSyncedAt = new Date().toISOString();
 
-      if (user.app === "rivas") {
-        await upsertMongo(user);
-      } else if (user.app === "yuga") {
-        await upsertYuga(user);
-      } else if (user.app === "vitess") {
-        await upsertVitess(user);
-      } else {
-        continue;
-      }
-
-      await put(key, user);
-      await put(`email:${user.app}:${user.email}`, user);
-      log.push(`[SYNCED] ${user.userId}`);
+    if (user.app === "rivas") {
+      await upsertMongo(user);
+    } else if (user.app === "yuga") {
+      await upsertYuga(user);
+    } else if (user.app === "vitess") {
+      await upsertVitess(user);
+    } else {
+      continue;
     }
+
+    await put(key, user);
+    await put(`email:${user.app}:${user.email}`, user);
+    log.push(`[SYNCED] ${user.userId}`);
+  } catch (err) {
+    logger.error(`[SYNC ERROR] ${key}: ${err.message}`);
+  }
+}
   }
 
   return log;
 }
-cron.schedule("30 22 * * *", async () => {
+cron.schedule("31 10 * * *", async () => {
   logger.info("[🧭] Rotating Aerospike sets at 10:30PM...");
   await rotateSets();
 });
 
-cron.schedule("0 23 * * *", async () => {
+cron.schedule("32 10 * * *", async () => {
   logger.info("[🕛] Nightly sync started...");
   await fullSync();
 });
