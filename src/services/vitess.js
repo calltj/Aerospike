@@ -16,7 +16,7 @@ const vitessConn = mysql.createPool({
 async function connectVitess() {
   // Test connection
   await vitessConn.getConnection();
-  logger.info("✅ Connected to Vitess");
+  logger.info(" Connected to Vitess");
 }
 
 async function findVitess(query, table = "users") {
@@ -52,10 +52,7 @@ async function upsertVitess(user, table = "users") {
 }
 
 async function deleteUser(userId, table = "users") {
-  await vitessConn.query(
-    `DELETE FROM \`${table}\` WHERE userId = ?`,
-    [userId]
-  );
+  await vitessConn.query(`DELETE FROM \`${table}\` WHERE userId = ?`, [userId]);
   return { userId };
 }
 
@@ -67,5 +64,10 @@ async function listUsers(table = "users", skip = 0, limit = 20) {
   return rows;
 }
 
-
-module.exports = { connectVitess, upsertVitess, findVitess, deleteUser, listUsers};
+module.exports = {
+  connectVitess,
+  upsertVitess,
+  findVitess,
+  deleteUser,
+  listUsers,
+};

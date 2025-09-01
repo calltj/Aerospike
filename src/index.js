@@ -58,46 +58,50 @@ async function fullSync(batchSize = 100) {
   for (let i = 0; i < userKeys.length; i += batchSize) {
     const batch = userKeys.slice(i, i + batchSize);
     // filepath: src/index.js (inside fullSync)
-for (const { key } of batch) {
-  try {
-    const user = await get(key);
-    if (!user || user.lastSyncedAt) continue;
+    for (const { key } of batch) {
+      try {
+        const user = await get(key);
+        if (!user || user.lastSyncedAt) continue;
 
-    user.lastSyncedAt = new Date().toISOString();
+        user.lastSyncedAt = new Date().toISOString();
 
-    if (user.app === "rivas") {
-      await upsertMongo(user);
-    } else if (user.app === "yuga") {
-      await upsertYuga(user);
-    } else if (user.app === "vitess") {
-      await upsertVitess(user);
-    } else {
-      continue;
+        if (user.app === "rivas") {
+          await upsertMongo(user);
+        } else if (user.app === "yuga") {
+          await upsertYuga(user);
+        } else if (user.app === "vitess") {
+          await upsertVitess(user);
+        } else {
+          continue;
+        }
+
+        await put(key, user);
+        await put(`email:${user.app}:${user.email}`, user);
+        log.push(`[SYNCED] ${user.userId}`);
+      } catch (err) {
+        logger.error(`[SYNC ERROR] ${key}: ${err.message}`);
+      }
     }
-
-    await put(key, user);
-    await put(`email:${user.app}:${user.email}`, user);
-    log.push(`[SYNCED] ${user.userId}`);
-  } catch (err) {
-    logger.error(`[SYNC ERROR] ${key}: ${err.message}`);
-  }
-}
   }
 
   return log;
 }
-cron.schedule("31 10 * * *", async () => {
-  logger.info("[🧭] Rotating Aerospike sets at 10:30PM...");
+cron.schedule("11 11 * * *", async () => {
+  logger.info("[] Rotating Aerospike sets at 10:30PM...");
   await rotateSets();
 });
 
-cron.schedule("32 10 * * *", async () => {
-  logger.info("[🕛] Nightly sync started...");
+cron.schedule("12 11 * * *", async () => {
+  const start = Date.now();
+  logger.info(`Nightly sync started at ${new Date(start).toISOString()}`);
   await fullSync();
+  const end = Date.now();
+  const elapsed = end - start;
+  logger.info(`Nightly sync finished at ${new Date(end).toISOString()} [${elapsed}ms elapsed]`);
 });
 
 cron.schedule("*/10 * * * *", async () => {
-  logger.info("[🧠] Checking for outdated data in prevSet...");
+  logger.info("[] Checking for outdated data in prevSet...");
   const keys = await scanSet(prevSet());
   for (const { key } of keys) {
     if (!key.startsWith("user:")) continue;
@@ -125,15 +129,15 @@ cron.schedule("*/10 * * * *", async () => {
 (async () => {
   try {
     await connectAerospike();
-    logger.info("✅ Connected to Aerospike");
+    logger.info(" Connected to Aerospike");
     await connectMongo();
-    logger.info("✅ Connected to MongoDB");
+    logger.info(" Connected to MongoDB");
     await connectYuga();
-    logger.info("✅ Connected to YugabyteDB");
+    logger.info(" Connected to YugabyteDB");
     await connectVitess();
-    logger.info("✅ Connected to Vitess");
+    logger.info(" Connected to Vitess");
     await connectScylla();
-    logger.info("✅ Connected to ScyllaDB");
+    logger.info(" Connected to ScyllaDB");
 
     app.get("/health", (req, res) => res.json({ status: "ok" }));
     app.get("/ready", async (req, res) => {
@@ -145,7 +149,7 @@ cron.schedule("*/10 * * * *", async () => {
       res.status(500).json({ error: err.message });
     });
     app.listen(PORT, () => {
-      logger.info(`🚀 Identity API running on port ${PORT}`);
+      logger.info(` Identity API running on port ${PORT}`);
     });
   } catch (err) {
     logger.error("❌ Startup error:", err.message);

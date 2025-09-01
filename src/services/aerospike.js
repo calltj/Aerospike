@@ -40,13 +40,13 @@ function getSetNames() {
   activeSet = `users_${activeDate.toISODate()}`;
   prevSet = `users_${prevDate.toISODate()}`;
 
-  logger.info(`[🧭] Active Set: ${activeSet}, Prev Set: ${prevSet}`);
+  logger.info(`[] Active Set: ${activeSet}, Prev Set: ${prevSet}`);
 }
 
 async function connectAerospike() {
   await client.connect();
   getSetNames();
-  logger.info("✅ Connected to Aerospike");
+  logger.info(" Connected to Aerospike");
 }
 
 function get(key) {
@@ -90,7 +90,7 @@ async function rotateSets() {
     .minus({ days: 2 })
     .toISODate();
   const oldSet = `users_${twoDaysAgo}`;
-  logger.info(`[🧹] Rotating sets. Deleting old set: ${oldSet}`);
+  logger.info(`[] Rotating sets. Deleting old set: ${oldSet}`);
 
   const keys = await scanSet(oldSet);
   for (const { key } of keys) {

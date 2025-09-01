@@ -13,7 +13,7 @@ const yugaConn = new Client({
 
 async function connectYuga() {
   await yugaConn.connect();
-  logger.info("✅ Connected to YugabyteDB");
+  logger.info(" Connected to YugabyteDB");
 }
 
 async function findUser(userId, email, table = "users") {

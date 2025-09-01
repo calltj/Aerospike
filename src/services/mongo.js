@@ -7,7 +7,7 @@ async function connectMongo() {
   const client = new MongoClient(process.env.MONGO_URI);
   await client.connect();
   mongoCollection = client.db().collection("users");
-  logger.info("✅ Connected to MongoDB");
+  logger.info(" Connected to MongoDB");
 }
 
 async function findUser(filter, collectionName = "users") {
@@ -23,10 +23,7 @@ async function upsertUser(user, collectionName = "users") {
 }
 
 async function deleteUser(userId, collectionName = "users") {
-  return mongoCollection
-    .db()
-    .collection(collectionName)
-    .deleteOne({ userId });
+  return mongoCollection.db().collection(collectionName).deleteOne({ userId });
 }
 
 async function listUsers(collectionName = "users", skip = 0, limit = 20) {
@@ -39,4 +36,4 @@ async function listUsers(collectionName = "users", skip = 0, limit = 20) {
     .toArray();
 }
 
-module.exports = { connectMongo, findUser, upsertUser,deleteUser, listUsers };
+module.exports = { connectMongo, findUser, upsertUser, deleteUser, listUsers };

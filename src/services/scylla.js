@@ -17,13 +17,13 @@ async function connectScylla() {
   });
   try {
     await tempClient.connect();
-    logger.info("✅ Connected to ScyllaDB cluster successfully!");
+    logger.info(" Connected to ScyllaDB cluster successfully!");
 
     await tempClient.execute(`
       CREATE KEYSPACE IF NOT EXISTS my_keyspace
       WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3'}
     `);
-    logger.info("📦 Keyspace 'my_keyspace' created or already exists.");
+    logger.info(" Keyspace 'my_keyspace' created or already exists.");
     await tempClient.execute(`
   CREATE TABLE IF NOT EXISTS my_keyspace.users (
     userId text PRIMARY KEY,
@@ -37,8 +37,8 @@ async function connectScylla() {
     await tempClient.execute(`
   CREATE INDEX IF NOT EXISTS users_email_idx ON my_keyspace.users (email)
 `);
-    logger.info("📦 Index on 'email' created or already exists.");
-    logger.info("📦 Table 'users' created or already exists.");
+    logger.info(" Index on 'email' created or already exists.");
+    logger.info(" Table 'users' created or already exists.");
   } catch (err) {
     logger.error("❌ ScyllaDB connection error:", err);
     throw err;
@@ -61,7 +61,7 @@ async function connectScylla() {
   });
 
   await scyllaConn.connect();
-  logger.info("✅ Connected to ScyllaDB (with keyspace)!");
+  logger.info(" Connected to ScyllaDB (with keyspace)!");
 }
 
 async function findScylla(query, table = "users") {
@@ -101,11 +101,9 @@ async function upsertScylla(user, table = "users") {
 }
 
 async function deleteUser(userId, table = "users") {
-  await scyllaConn.execute(
-    `DELETE FROM ${table} WHERE userId = ?`,
-    [userId],
-    { prepare: true }
-  );
+  await scyllaConn.execute(`DELETE FROM ${table} WHERE userId = ?`, [userId], {
+    prepare: true,
+  });
   return { userId };
 }
 
@@ -118,4 +116,10 @@ async function listUsers(table = "users", skip = 0, limit = 20) {
   return res.rows;
 }
 
-module.exports = { connectScylla, findScylla, upsertScylla,deleteUser, listUsers, };
+module.exports = {
+  connectScylla,
+  findScylla,
+  upsertScylla,
+  deleteUser,
+  listUsers,
+};
