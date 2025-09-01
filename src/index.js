@@ -87,12 +87,12 @@ async function fullSync(batchSize = 100) {
 
   return log;
 }
-cron.schedule("11 11 * * *", async () => {
+cron.schedule("24 11 * * *", async () => {
   logger.info("[] Rotating Aerospike sets at 10:30PM...");
   await rotateSets();
 });
 
-cron.schedule("12 11 * * *", async () => {
+cron.schedule("25 11 * * *", async () => {
   const start = Date.now();
   logger.info(`Nightly sync started at ${new Date(start).toISOString()}`);
   try {
