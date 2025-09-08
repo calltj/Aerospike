@@ -2,8 +2,10 @@ const Aerospike = require("aerospike");
 const { DateTime } = require("luxon");
 require("dotenv").config();
 const logger = require("../logger");
+
 logger.info("AEROSPIKE_HOST:", process.env.AEROSPIKE_HOST);
 logger.info("AEROSPIKE_PORT:", process.env.AEROSPIKE_PORT);
+
 const config = {
   hosts: [
     {
@@ -18,7 +20,11 @@ const client = Aerospike.client(config);
 let activeSet = "";
 let prevSet = "";
 
-function getSetNames() {
+// Default namespace if not provided (should be overridden by passing namespace)
+const DEFAULT_NAMESPACE = process.env.AEROSPIKE_NAMESPACE || "ecommerce";
+
+// Determines the active and previous set names based on time
+function getSetNames() {  
   const now = DateTime.now().setZone("Africa/Lagos");
   const today = now.startOf("day");
   const rotationHour = 22;
@@ -49,28 +55,29 @@ async function connectAerospike() {
   logger.info(" Connected to Aerospike");
 }
 
-function get(key) {
+// Always pass the namespace for multi-app support!
+function get(key, namespace = DEFAULT_NAMESPACE) {
   return client
-    .get(new Aerospike.Key("test", activeSet, key))
+    .get(new Aerospike.Key(namespace, activeSet, key))
     .then((res) => res.bins)
     .catch(() => null);
 }
 
-function put(key, data, policy = {}) {
+function put(key, data, policy = {}, namespace = DEFAULT_NAMESPACE) {
   const options = Object.keys(policy).length ? { policy } : {};
-  return client.put(new Aerospike.Key("test", activeSet, key), data, options);
+  return client.put(new Aerospike.Key(namespace, activeSet, key), data, options);
 }
 
-function getPrev(key) {
+function getPrev(key, namespace = DEFAULT_NAMESPACE) {
   return client
-    .get(new Aerospike.Key("test", prevSet, key))
+    .get(new Aerospike.Key(namespace, prevSet, key))
     .then((res) => res.bins)
     .catch(() => null);
 }
 
-function scanSet(setName) {
+function scanSet(setName, namespace = DEFAULT_NAMESPACE) {
   return new Promise((resolve, reject) => {
-    const scan = client.scan("test", setName);
+    const scan = client.scan(namespace, setName);
     const keys = [];
     scan.foreach(
       (record) => {
@@ -84,7 +91,7 @@ function scanSet(setName) {
   });
 }
 
-async function rotateSets() {
+async function rotateSets(namespace = DEFAULT_NAMESPACE) {
   const twoDaysAgo = DateTime.now()
     .setZone("Africa/Lagos")
     .minus({ days: 2 })
@@ -92,9 +99,9 @@ async function rotateSets() {
   const oldSet = `users_${twoDaysAgo}`;
   logger.info(`[] Rotating sets. Deleting old set: ${oldSet}`);
 
-  const keys = await scanSet(oldSet);
+  const keys = await scanSet(oldSet, namespace);
   for (const { key } of keys) {
-    await client.remove(new Aerospike.Key("test", oldSet, key)).catch(() => {});
+    await client.remove(new Aerospike.Key(namespace, oldSet, key)).catch(() => {});
   }
 
   getSetNames(); // Refresh active and prev sets

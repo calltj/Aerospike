@@ -35,13 +35,14 @@ router.post("/identity", async (req, res) => {
     return res.status(400).json({ error: "Missing user or app name" });
   if (user.password) {
     user.hashedPassword = await hash(user.password);
-    delete user.password; 
+    delete user.password;
   }
   const emailKey = `email:${appName}:${user.email}`;
   const idKey = `user:${appName}:${user.userId}`;
 
   try {
-    const cached = (await get(idKey)) || (await get(emailKey));
+    const cached =
+      (await get(idKey, appName)) || (await get(emailKey, appName));
     if (cached) return res.json({ user: cached });
 
     const result =
@@ -56,8 +57,8 @@ router.post("/identity", async (req, res) => {
         : null;
 
     if (result) {
-      await put(idKey, result);
-      await put(emailKey, result);
+      await put(idKey, result, {}, appName);
+      await put(emailKey, result, {}, appName);
       return res.json({ user: result });
     }
 
@@ -70,14 +71,18 @@ router.post("/identity", async (req, res) => {
 
     try {
       // Try to create the emailKey only if it does not exist (atomic)
-      await put(emailKey, newUser, { exists: Aerospike.policy.exists.CREATE });
-      // idKey can be upserted
-      await put(idKey, newUser);
+      await put(
+        emailKey,
+        newUser,
+        { exists: Aerospike.policy.exists.CREATE },
+        appName
+      );
+      await put(idKey, newUser, {}, appName);
       return res.status(201).json({ user: newUser });
     } catch (err) {
       if (err.code === Aerospike.status.ERR_RECORD_EXISTS) {
         // Someone else just created this emailKey
-        const existing = await get(emailKey);
+        const existing = await get(emailKey, appName);
         return res.json({ user: existing });
       }
       return res.status(500).json({ error: err.message });
@@ -91,7 +96,9 @@ router.post("/identity/login", async (req, res) => {
   const { email, password, table = "users" } = req.body;
   const appName = req.headers["x-app-name"];
   if (!email || !password || !appName)
-    return res.status(400).json({ error: "Missing email, password, or app name" });
+    return res
+      .status(400)
+      .json({ error: "Missing email, password, or app name" });
 
   // Fetch user from the correct DB
   let userFromDb = null;
@@ -127,7 +134,9 @@ router.put("/identity", authMiddleware, async (req, res) => {
   const { userId, updates, table = "users" } = req.body;
   const appName = req.headers["x-app-name"];
   if (!userId || !updates || !appName)
-    return res.status(400).json({ error: "Missing userId, updates, or app name" });
+    return res
+      .status(400)
+      .json({ error: "Missing userId, updates, or app name" });
 
   let updatedUser = null;
   try {
@@ -181,13 +190,29 @@ router.get("/users", authMiddleware, async (req, res) => {
   try {
     let users = [];
     if (appName === "rivas") {
-      users = await require("../services/mongo").listUsers(table, skip, parseInt(limit));
+      users = await require("../services/mongo").listUsers(
+        table,
+        skip,
+        parseInt(limit)
+      );
     } else if (appName === "yuga") {
-      users = await require("../services/yuga").listUsers(table, skip, parseInt(limit));
+      users = await require("../services/yuga").listUsers(
+        table,
+        skip,
+        parseInt(limit)
+      );
     } else if (appName === "vitess" || appName === "ecommerce") {
-      users = await require("../services/vitess").listUsers(table, skip, parseInt(limit));
+      users = await require("../services/vitess").listUsers(
+        table,
+        skip,
+        parseInt(limit)
+      );
     } else if (appName === "scylla") {
-      users = await require("../services/scylla").listUsers(table, skip, parseInt(limit));
+      users = await require("../services/scylla").listUsers(
+        table,
+        skip,
+        parseInt(limit)
+      );
     } else {
       return res.status(400).json({ error: "Unsupported app name" });
     }
@@ -197,43 +222,43 @@ router.get("/users", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/sync", async (req, res) => {
-  const batchSize = parseInt(req.query.batchSize || "100");
-  const log = [];
+// router.post("/sync", async (req, res) => {
+//   const batchSize = parseInt(req.query.batchSize || "100");
+//   const log = [];
 
-  try {
+//   try {
     const keys = await scanSet(prevSet());
-    const userKeys = keys.filter((k) => k.key.startsWith("user:"));
+//     const userKeys = keys.filter((k) => k.key.startsWith("user:"));
 
-    for (let i = 0; i < userKeys.length; i += batchSize) {
-      const batch = userKeys.slice(i, i + batchSize);
-      for (const { key } of batch) {
-        const user = await getPrev(key);
-        if (!user || user.lastSyncedAt) continue;
+//     for (let i = 0; i < userKeys.length; i += batchSize) {
+//       const batch = userKeys.slice(i, i + batchSize);
+//       for (const { key } of batch) {
+//         const user = await getPrev(key);
+//         if (!user || user.lastSyncedAt) continue;
 
-        user.lastSyncedAt = new Date().toISOString();
+//         user.lastSyncedAt = new Date().toISOString();
 
-        if (user.app === "rivas") {
-          await upsertMongo(user, user.table || "users");
-        } else if (user.app === "yuga") {
-          await upsertYuga(user, user.table || "users");
-        } else if (user.app === "vitess") {
-          await upsertVitess(user, user.table || "users");
-        } else if (user.app === "scylla") {
-          await upsertScylla(user, user.table || "users");
-        } else {
-          continue;
-        }
+//         if (user.app === "rivas") {
+//           await upsertMongo(user, user.table || "users");
+//         } else if (user.app === "yuga") {
+//           await upsertYuga(user, user.table || "users");
+//         } else if (user.app === "vitess") {
+//           await upsertVitess(user, user.table || "users");
+//         } else if (user.app === "scylla") {
+//           await upsertScylla(user, user.table || "users");
+//         } else {
+//           continue;
+//         }
 
-        log.push(`[SYNCED] ${user.userId}`);
-      }
-    }
+//         log.push(`[SYNCED] ${user.userId}`);
+//       }
+//     }
 
-    res.json({ message: "Sync complete", entries: log.length });
-  } catch (err) {
-    res.status(500).json({ error: "Sync failed", details: err.message });
-  }
-});
+//     res.json({ message: "Sync complete", entries: log.length });
+//   } catch (err) {
+//     res.status(500).json({ error: "Sync failed", details: err.message });
+//   }
+// });
 
 router.get("/identity/check", async (req, res) => {
   const { email, table = "users" } = req.query;
@@ -244,7 +269,7 @@ router.get("/identity/check", async (req, res) => {
 
   try {
     const emailKey = `email:${appName}:${email}`;
-    let user = await get(emailKey);
+    let user = await get(emailKey, appName);
 
     if (!user) {
       if (appName === "rivas") {

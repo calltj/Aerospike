@@ -5,6 +5,7 @@ const cron = require("node-cron");
 require("dotenv").config();
 require("../config/validateEnv");
 const PORT = process.env.PORT || 3000;
+
 const {
   rotateSets,
   scanSet,
@@ -16,25 +17,19 @@ const { connectAerospike, get, put } = require("./services/aerospike");
 const {
   connectMongo,
   findUser: findMongo,
-  upsertUser: upsertMongo,
 } = require("./services/mongo");
 const {
   connectYuga,
   findUser: findYuga,
-  upsertUser: upsertYuga,
 } = require("./services/yuga");
 const identityRoute = require("./routes/identity");
-
 const {
   connectVitess,
   findVitess,
-  upsertVitess,
 } = require("./services/vitess");
-
 const {
   connectScylla,
   findScylla,
-  upsertScylla,
 } = require("./services/scylla");
 
 const app = express();
@@ -49,89 +44,20 @@ app.use(express.json());
 app.use(cors());
 app.use("/api", identityRoute);
 
-async function fullSync(batchSize = 100) {
-  const { activeSet } = require("./services/aerospike");
-  const setName = activeSet();
-  const keys = await scanSet(setName);
-  const userKeys = keys.filter((k) => k.key.startsWith("user:"));
-  const log = [];
-
-  for (let i = 0; i < userKeys.length; i += batchSize) {
-    const batch = userKeys.slice(i, i + batchSize);
-    // filepath: src/index.js (inside fullSync)
-    for (const { key } of batch) {
-      try {
-        const user = await get(key);
-        if (!user || user.lastSyncedAt) continue;
-
-        user.lastSyncedAt = new Date().toISOString();
-
-        if (user.app === "rivas") {
-          await upsertMongo(user);
-        } else if (user.app === "yuga") {
-          await upsertYuga(user);
-        } else if (user.app === "vitess") {
-          await upsertVitess(user);
-        } else {
-          continue;
-        }
-
-        await put(key, user);
-        await put(`email:${user.app}:${user.email}`, user);
-        log.push(`[SYNCED] ${user.userId}`);
-      } catch (err) {
-        logger.error(`[SYNC ERROR] ${key}: ${err.message}`);
-      }
-    }
-  }
-
-  return log;
-}
-cron.schedule("24 11 * * *", async () => {
+// Only rotate Aerospike sets, no sync to other DBs
+cron.schedule("27 11 * * *", async () => {
   logger.info("[] Rotating Aerospike sets at 10:30PM...");
   await rotateSets();
 });
 
-cron.schedule("25 11 * * *", async () => {
-  const start = Date.now();
-  logger.info(`Nightly sync started at ${new Date(start).toISOString()}`);
-  try {
-    await fullSync();
-    const end = Date.now();
-    const elapsed = end - start;
-    logger.info(
-      `Nightly sync finished at ${new Date(
-        end
-      ).toISOString()} [${elapsed}ms elapsed]`
-    );
-  } catch (err) {
-    logger.error(`[NIGHTLY SYNC ERROR] ${err.message}`);
-  }
-});
-
+// Optionally, you can keep this to clean outdated data in prevSet, but do NOT sync to other DBs
 cron.schedule("*/10 * * * *", async () => {
   logger.info("[] Checking for outdated data in prevSet...");
   const keys = await scanSet(prevSet());
   for (const { key } of keys) {
     if (!key.startsWith("user:")) continue;
-    const cached = await getPrev(key);
-    const live =
-      cached.app === "rivas"
-        ? await findMongo({ userId: cached.userId })
-        : cached.app === "yuga"
-        ? await findYuga(cached.userId, cached.email)
-        : cached.app === "vitess"
-        ? await findVitess({ userId: cached.userId })
-        : null;
-    if (!live || JSON.stringify(live) !== JSON.stringify(cached)) {
-      logger.info(`[🔄 RESYNC REQUIRED] ${cached.userId}`);
-      cached.lastSyncedAt = new Date().toISOString();
-      if (cached.app === "rivas") {
-        await upsertMongo(cached);
-      } else if (cached.app === "yuga") {
-        await upsertYuga(cached);
-      }
-    }
+    // Optionally, you can check if the data is still valid in fallback DBs, but do NOT upsert
+    // If you want to remove outdated data from Aerospike, you can do it here
   }
 });
 
