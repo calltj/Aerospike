@@ -4,3 +4,4 @@ sync_logs.txt
 certs/
 package-lock.json
 package.json
+ValidateEnv.js
