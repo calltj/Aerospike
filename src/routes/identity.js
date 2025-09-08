@@ -227,7 +227,7 @@ router.get("/users", authMiddleware, async (req, res) => {
 //   const log = [];
 
 //   try {
-    const keys = await scanSet(prevSet());
+    // const keys = await scanSet(prevSet());
 //     const userKeys = keys.filter((k) => k.key.startsWith("user:"));
 
 //     for (let i = 0; i < userKeys.length; i += batchSize) {
