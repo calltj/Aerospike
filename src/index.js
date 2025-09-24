@@ -50,14 +50,12 @@ cron.schedule("27 11 * * *", async () => {
   await rotateSets();
 });
 
-// Optionally, you can keep this to clean outdated data in prevSet, but do NOT sync to other DBs
 cron.schedule("*/10 * * * *", async () => {
   logger.info("[] Checking for outdated data in prevSet...");
   const keys = await scanSet(prevSet());
   for (const { key } of keys) {
     if (!key.startsWith("user:")) continue;
-    // Optionally, you can check if the data is still valid in fallback DBs, but do NOT upsert
-    // If you want to remove outdated data from Aerospike, you can do it here
+    
   }
 });
 
@@ -76,7 +74,7 @@ cron.schedule("*/10 * * * *", async () => {
 
     app.get("/health", (req, res) => res.json({ status: "ok" }));
     app.get("/ready", async (req, res) => {
-      // Optionally check DB connections
+      
       res.json({ ready: true });
     });
     app.use((err, req, res, next) => {
@@ -87,7 +85,7 @@ cron.schedule("*/10 * * * *", async () => {
       logger.info(` Identity API running on port ${PORT}`);
     });
   } catch (err) {
-    logger.error("❌ Startup error:", err.message);
+    logger.error("❌ Startup error:", err);
     process.exit(1);
   }
 })();
